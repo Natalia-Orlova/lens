@@ -7,25 +7,29 @@
     <style>
       body {
         overflow: hidden;
+        touch-action: none; /* Предотвращает скролл при касании */
       }
-    </style>
-  </head>
-  <body>
-    <div
-      id="stretchableText"
-      style="
+      #stretchableText {
+        width: 90%;
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-      "
-    >
-      Lorem ipsum dolor sit, amet consectetur adipisicing elit. Perspiciatis,
-      porro, sequi placeat quidem sint voluptate, eaque quaerat qui dignissimos
-      commodi ex excepturi. Itaque explicabo aliquam laudantium voluptatibus
-      quos cumque sed culpa consequuntur iusto repudiandae iure animi, odio
-      vitae quasi blanditiis beatae. Quasi iure praesentium quae distinctio
-      itaque facilis ipsam eligendi.
+        line-height: 32px;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div id="stretchableText">
+        Lorem ipsum dolor sit, amet consectetur adipisicing elit. Perspiciatis,
+        porro, sequi placeat quidem sint voluptate, eaque quaerat qui
+        dignissimos commodi ex excepturi. Itaque explicabo aliquam laudantium
+        voluptatibus quos cumque sed culpa consequuntur iusto repudiandae iure
+        animi, odio vitae quasi blanditiis beatae. Quasi iure praesentium quae
+        distinctio itaque facilis ipsam eligendi. Lorem ipsum dolor sit amet consectetur adipisicing elit. Totam cumque minus ea nam laudantium quibusdam. Eveniet earum, aperiam natus beatae, aliquam voluptatibus incidunt repudiandae, reiciendis dolorem officia minus fuga obcaecati vitae eum. Nemo optio impedit modi facilis, et excepturi expedita voluptates voluptatum nisi veritatis reiciendis ratione iste consequatur libero tempora!
+      </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script>
@@ -43,6 +47,8 @@
           let span = document.createElement("span");
           span.textContent = text[i];
           span.style.display = "inline-block";
+          span.style.transformOrigin = "center";
+          span.style.transform = "scale(1)";
           textContainer.appendChild(span);
           textParts.push(span);
         }
@@ -58,9 +64,16 @@
           let partCenterY = partRect.top + partRect.height / 2;
 
           let d = dist(mouseX, mouseY, partCenterX, partCenterY);
-          let stretchFactor = map(d, 0, 100, 1, 2, true);
+          let stretchFactor = map(d, 0, 100, 2, 1, true);
 
-          part.style.transform = `scale(${stretchFactor})`;
+          if (d < 100) {
+            // Условие для увеличения символов в радиусе 30px от курсора
+            part.style.transform = `scale(${stretchFactor})`;
+            part.style.filter = `blur(0.4px)`;
+          } else {
+            part.style.transform = "scale(1)";
+            part.style.filter = "none";
+          }
         }
       }
 
@@ -78,6 +91,14 @@
       function windowResized() {
         resizeCanvas(windowWidth, windowHeight);
       }
+
+      document.addEventListener(
+        "touchstart",
+        function (event) {
+          event.preventDefault();
+        },
+        { passive: false }
+      );
     </script>
   </body>
 </html>
