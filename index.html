@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -41,13 +41,14 @@
     <script>
       let textContainer;
       let textParts = [];
-      let touchPoints = [];
 
       function setup() {
         createCanvas(windowWidth, windowHeight);
         textContainer = document.getElementById("stretchableText");
         let text = textContainer.textContent;
         textContainer.innerHTML = "";
+
+        console.log("Text parts length:", text.length);
 
         for (let i = 0; i < text.length; i++) {
           let span = document.createElement("span");
@@ -77,42 +78,123 @@
             part.style.filter = "blur(0.3px)";
           } else {
             part.style.transform = "scale(1)";
-            part.style.filter = "none"; 
+            part.style.filter = "none";
           }
         }
-      }
-
-      function mousePressed() {
-        touchPoints.push({ x: mouseX, y: mouseY });
-      }
-
-      function mouseReleased() {
-        touchPoints = [];
-        resetTextStyles();
-      }
-
-      function windowResized() {
-        resizeCanvas(windowWidth, windowHeight);
       }
 
       document.addEventListener(
         "touchstart",
         function (event) {
+          console.log("touchstart event triggered");
           event.preventDefault();
         },
         { passive: false }
       );
 
       document.addEventListener("touchend", function () {
+        console.log("touchend event triggered");
         resetTextStyles();
       });
 
       function resetTextStyles() {
+        console.log("Resetting text styles");
         for (let part of textParts) {
+          console.log("Resetting style for:", part);
           part.style.transform = "scale(1)";
           part.style.filter = "none";
         }
       }
     </script>
   </body>
+</html> -->
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Distortion</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let img = new Image();
+        img.src = 'test.png';
+
+        img.onload = () => {
+            console.log('Image loaded');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+
+        img.onerror = () => {
+            console.error('Failed to load image');
+        };
+
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        });
+
+        canvas.addEventListener('mousemove', distortImage);
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseout', () => isDrawing = false);
+
+        function distortImage(e) {
+            if (!isDrawing) return;
+
+            const x = e.offsetX;
+            const y = e.offsetY;
+            const radius = 100;
+            const distortionFactor = 1.5;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.clip();
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+
+            for (let i = 0; i < pixels.length; i += 4) {
+                const pixelX = (i / 4) % canvas.width;
+                const pixelY = Math.floor((i / 4) / canvas.width);
+                const distance = Math.sqrt((pixelX - x) ** 2 + (pixelY - y) ** 2);
+
+                if (distance < radius) {
+                    const factor = distortionFactor * Math.pow(1 - distance / radius, 2);
+                    const offsetX = (pixelX - x) * factor;
+                    const offsetY = (pixelY - y) * factor;
+
+                    const sourceX = pixelX - offsetX;
+                    const sourceY = pixelY - offsetY;
+
+                    if (sourceX >= 0 && sourceX < canvas.width && sourceY >= 0 && sourceY < canvas.height) {
+                        const sourceIndex = (Math.floor(sourceY) * canvas.width + Math.floor(sourceX)) * 4;
+                        pixels[i] = imageData.data[sourceIndex];
+                        pixels[i + 1] = imageData.data[sourceIndex + 1];
+                        pixels[i + 2] = imageData.data[sourceIndex + 2];
+                    }
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            ctx.restore();
+        }
+    </script>
+</body>
 </html>
+
