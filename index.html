@@ -1,103 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Cursor-based Graphics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
     <style>
-      /* Add some basic styling to our canvas */
-      canvas {
-        border: 1px solid black;
+      body {
+        overflow: hidden;
       }
     </style>
   </head>
   <body>
-    <canvas id="canvas" width="400" height="400"></canvas>
+    <div
+      id="stretchableText"
+      style="
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      "
+    >
+      Lorem ipsum dolor sit, amet consectetur adipisicing elit. Perspiciatis,
+      porro, sequi placeat quidem sint voluptate, eaque quaerat qui dignissimos
+      commodi ex excepturi. Itaque explicabo aliquam laudantium voluptatibus
+      quos cumque sed culpa consequuntur iusto repudiandae iure animi, odio
+      vitae quasi blanditiis beatae. Quasi iure praesentium quae distinctio
+      itaque facilis ipsam eligendi.
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script>
-      // Get the canvas element
-      const canvas = document.getElementById("canvas");
-      const ctx = canvas.getContext("2d");
+      let textContainer;
+      let textParts = [];
+      let touchPoints = [];
 
-      // Define the w function
-      function w(p, a, l, v) {
-        let m = [
-          -v[0] *
-            Math.pow(
-              Math.clamp(1 - Math.hypot(l[0] - p[0], l[1] - p[1]) / 190, 0, 1),
-              2
-            ) *
-            1.5,
-          -v[1] *
-            Math.pow(
-              Math.clamp(1 - Math.hypot(l[0] - p[0], l[1] - p[1]) / 190, 0, 1),
-              2
-            ) *
-            1.5,
-        ];
-        let c = [0, 0, 0];
-        for (let i = 0; i < 10; i++) {
-          let s = 0.175 + 0.005 * i;
-          c[0] += a.sample(p[0] + s * m[0], p[1] + s * m[1]).r;
-          c[1] += a.sample(
-            p[0] + (s + 0.025) * m[0],
-            p[1] + (s + 0.025) * m[1]
-          ).g;
-          c[2] += a.sample(
-            p[0] + (s + 0.05) * m[0],
-            p[1] + (s + 0.05) * m[1]
-          ).b;
+      function setup() {
+        createCanvas(windowWidth, windowHeight);
+        textContainer = document.getElementById("stretchableText");
+        let text = textContainer.textContent;
+        textContainer.innerHTML = "";
+
+        for (let i = 0; i < text.length; i++) {
+          let span = document.createElement("span");
+          span.textContent = text[i];
+          span.style.display = "inline-block";
+          textContainer.appendChild(span);
+          textParts.push(span);
         }
-        return [c[0] / 10, c[1] / 10, c[2] / 10, 1];
       }
 
-      // Add event listeners for mouse and touch events
-      canvas.addEventListener("mousemove", (event) => {
-        const pos = getCursorPosition(event);
-        const layer = {
-          /* your layer data */
-        };
-        const lightPos = [100, 100]; // Replace with your light position
-        const viewDir = [0, 0]; // Replace with your view direction
-        const result = w(pos, layer, lightPos, viewDir);
-        // Render the result
-        renderResult(result);
-      });
+      function draw() {
+        background(255);
 
-      canvas.addEventListener("touchmove", (event) => {
-        const pos = getTouchPosition(event);
-        const layer = {
-          /* your layer data */
-        };
-        const lightPos = [100, 100]; // Replace with your light position
-        const viewDir = [0, 0]; // Replace with your view direction
-        const result = w(pos, layer, lightPos, viewDir);
-        // Render the result
-        renderResult(result);
-      });
+        for (let i = 0; i < textParts.length; i++) {
+          let part = textParts[i];
+          let partRect = part.getBoundingClientRect();
+          let partCenterX = partRect.left + partRect.width / 2;
+          let partCenterY = partRect.top + partRect.height / 2;
 
-      // Helper function to get the cursor position
-      function getCursorPosition(event) {
-        const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        return [x, y];
+          let d = dist(mouseX, mouseY, partCenterX, partCenterY);
+          let stretchFactor = map(d, 0, 100, 1, 2, true);
+
+          part.style.transform = `scale(${stretchFactor})`;
+        }
       }
 
-      // Helper function to get the touch position
-      function getTouchPosition(event) {
-        const rect = canvas.getBoundingClientRect();
-        const touch = event.touches[0];
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        return [x, y];
+      function mousePressed() {
+        touchPoints.push({ x: mouseX, y: mouseY });
       }
 
-      // Helper function to render the result
-      function renderResult(result) {
-        // Use the result to render graphics on the canvas
-        ctx.fillStyle = `rgba(${result[0] * 255}, ${result[1] * 255}, ${
-          result[2] * 255
-        }, 1)`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      function mouseReleased() {
+        touchPoints = [];
+        for (let part of textParts) {
+          part.style.transform = "scale(1)";
+        }
+      }
+
+      function windowResized() {
+        resizeCanvas(windowWidth, windowHeight);
       }
     </script>
   </body>
