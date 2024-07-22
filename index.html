@@ -73,12 +73,11 @@
           let stretchFactor = map(d, 0, 100, 2, 1, true);
 
           if (d < 100) {
-            // Условие для увеличения символов в радиусе 30px от курсора
             part.style.transform = `scale(${stretchFactor})`;
-            part.style.filter = "blur(0.3px)"; // Увеличиваем степень размытия
+            part.style.filter = "blur(0.3px)";
           } else {
             part.style.transform = "scale(1)";
-            part.style.filter = "none"; // Убираем размытие, если символ не увеличен
+            part.style.filter = "none"; 
           }
         }
       }
@@ -110,15 +109,10 @@
 
       function resetTextStyles() {
         for (let part of textParts) {
-          part.style.transform = "scale(1) !important";
-          part.style.filter = "none !important"; // Убираем размытие
+          part.style.transform = "scale(1)";
+          part.style.filter = "none";
         }
       }
-
-      document.addEventListener("touchend", function () {
-        console.log("touchend event triggered");
-        resetTextStyles();
-      });
     </script>
   </body>
 </html>
