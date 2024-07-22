@@ -28,7 +28,13 @@
         dignissimos commodi ex excepturi. Itaque explicabo aliquam laudantium
         voluptatibus quos cumque sed culpa consequuntur iusto repudiandae iure
         animi, odio vitae quasi blanditiis beatae. Quasi iure praesentium quae
-        distinctio itaque facilis ipsam eligendi. Lorem ipsum dolor sit amet consectetur adipisicing elit. Totam cumque minus ea nam laudantium quibusdam. Eveniet earum, aperiam natus beatae, aliquam voluptatibus incidunt repudiandae, reiciendis dolorem officia minus fuga obcaecati vitae eum. Nemo optio impedit modi facilis, et excepturi expedita voluptates voluptatum nisi veritatis reiciendis ratione iste consequatur libero tempora!
+        distinctio itaque facilis ipsam eligendi. Lorem ipsum dolor sit amet
+        consectetur adipisicing elit. Totam cumque minus ea nam laudantium
+        quibusdam. Eveniet earum, aperiam natus beatae, aliquam voluptatibus
+        incidunt repudiandae, reiciendis dolorem officia minus fuga obcaecati
+        vitae eum. Nemo optio impedit modi facilis, et excepturi expedita
+        voluptates voluptatum nisi veritatis reiciendis ratione iste consequatur
+        libero tempora!
       </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
@@ -48,7 +54,7 @@
           span.textContent = text[i];
           span.style.display = "inline-block";
           span.style.transformOrigin = "center";
-          span.style.transform = "scale(1)";
+          span.style.transform = "scale(1)"; // Устанавливаем изначальный масштаб
           textContainer.appendChild(span);
           textParts.push(span);
         }
@@ -69,10 +75,10 @@
           if (d < 100) {
             // Условие для увеличения символов в радиусе 30px от курсора
             part.style.transform = `scale(${stretchFactor})`;
-            part.style.filter = `blur(0.4px)`;
+            part.style.filter = "blur(0.3px)"; // Увеличиваем степень размытия
           } else {
             part.style.transform = "scale(1)";
-            part.style.filter = "none";
+            part.style.filter = "none"; 
           }
         }
       }
@@ -85,6 +91,7 @@
         touchPoints = [];
         for (let part of textParts) {
           part.style.transform = "scale(1)";
+          part.style.filter = "none";
         }
       }
 
@@ -99,6 +106,13 @@
         },
         { passive: false }
       );
+
+      document.addEventListener("touchend", function () {
+        for (let part of textParts) {
+          part.style.transform = "scale(1)";
+          part.style.filter = "none";
+        }
+      });
     </script>
   </body>
 </html>
