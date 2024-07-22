@@ -78,7 +78,7 @@
             part.style.filter = "blur(0.3px)"; // Увеличиваем степень размытия
           } else {
             part.style.transform = "scale(1)";
-            part.style.filter = "none"; 
+            part.style.filter = "none"; // Убираем размытие, если символ не увеличен
           }
         }
       }
@@ -89,10 +89,7 @@
 
       function mouseReleased() {
         touchPoints = [];
-        for (let part of textParts) {
-          part.style.transform = "scale(1)";
-          part.style.filter = "none";
-        }
+        resetTextStyles();
       }
 
       function windowResized() {
@@ -108,10 +105,19 @@
       );
 
       document.addEventListener("touchend", function () {
+        resetTextStyles();
+      });
+
+      function resetTextStyles() {
         for (let part of textParts) {
-          part.style.transform = "scale(1)";
-          part.style.filter = "none";
+          part.style.transform = "scale(1) !important";
+          part.style.filter = "none !important"; // Убираем размытие
         }
+      }
+
+      document.addEventListener("touchend", function () {
+        console.log("touchend event triggered");
+        resetTextStyles();
       });
     </script>
   </body>
