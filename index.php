@@ -123,7 +123,7 @@
     canvas {
       border: 1px solid black;
       touch-action: none;
-      /* Отключаем стандартное поведение касания */
+      width: 100%;
     }
   </style>
 </head>
