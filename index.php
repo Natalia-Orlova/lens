@@ -114,129 +114,142 @@
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Image Displacement with Motion Blur</title>
-  <style>
-    canvas {
-      border: 1px solid black;
-      touch-action: none;
-      width: 100%;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Displacement with Motion Blur</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        canvas {
+            border: 1px solid black;
+            touch-action: none; /* Отключаем стандартное поведение касания */
+            width: 100%;
+            height: 100%;
+        }
+    </style>
 </head>
-
 <body>
-  <canvas id="canvas" width="600" height="900"></canvas>
-  <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    let img = new Image();
-    img.src = 'test.png'; // Замените на имя вашего изображения
+    <canvas id="canvas" width="600" height="900"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let img = new Image();
+        img.src = 'test.png'; // Замените на имя вашего изображения
 
-    img.onload = () => {
-      console.log('Image loaded');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    };
+        img.onload = () => {
+            console.log('Image loaded');
+            resizeCanvas();
+        };
 
-    img.onerror = () => {
-      console.error('Failed to load image');
-    };
+        img.onerror = () => {
+            console.error('Failed to load image');
+        };
 
-    let isDrawing = false;
-    let lastX = 0;
-    let lastY = 0;
-    let touchX = 0;
-    let touchY = 0;
-    let originalImageData = null;
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let touchX = 0;
+        let touchY = 0;
+        let originalImageData = null;
 
-    canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault(); // Предотвращаем стандартное поведение
-      isDrawing = true;
-      const touch = e.touches[0];
-      [lastX, lastY] = [touch.clientX, touch.clientY];
-      originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    });
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Предотвращаем стандартное поведение
+            isDrawing = true;
+            const touch = e.touches[0];
+            [lastX, lastY] = [touch.clientX, touch.clientY];
+            originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        });
 
-    canvas.addEventListener('touchmove', (e) => {
-      if (!isDrawing) return;
-      e.preventDefault(); // Предотвращаем стандартное поведение
-      const touch = e.touches[0];
-      [touchX, touchY] = [touch.clientX, touch.clientY];
-      requestAnimationFrame(() => displacePixels(touchX, touchY));
-    });
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isDrawing) return;
+            e.preventDefault(); // Предотвращаем стандартное поведение
+            const touch = e.touches[0];
+            [touchX, touchY] = [touch.clientX, touch.clientY];
+            requestAnimationFrame(() => displacePixels(touchX, touchY));
+        });
 
-    canvas.addEventListener('touchend', () => {
-      isDrawing = false;
-      resetImage();
-    });
+        canvas.addEventListener('touchend', () => {
+            isDrawing = false;
+            resetImage();
+        });
 
-    canvas.addEventListener('touchcancel', () => {
-      isDrawing = false;
-      resetImage();
-    });
+        canvas.addEventListener('touchcancel', () => {
+            isDrawing = false;
+            resetImage();
+        });
 
-    function displacePixels(x, y) {
-        const radius = 100;
-        const displacementFactor = 10;
-        const blurSamples = 5; // Количество сэмплов для эффекта motion blur
-        const smoothFactor = 0.5; // Фактор сглаживания движения
+        function displacePixels(x, y) {
+            const radius = 100;
+            const displacementFactor = 10;
+            const blurSamples = 5;
+            const smoothFactor = 0.5;
 
-        // Восстанавливаем исходное изображение
-        if (originalImageData) {
-            ctx.putImageData(originalImageData, 0, 0);
+            if (originalImageData) {
+                ctx.putImageData(originalImageData, 0, 0);
+            }
+
+            const dx = (x - lastX) * smoothFactor;
+            const dy = (y - lastY) * smoothFactor;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const directionX = length > 0 ? dx / length : 0;
+            const directionY = length > 0 ? dy / length : 0;
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+
+            for (let i = 0; i < pixels.length; i += 4) {
+                const pixelX = (i / 4) % canvas.width;
+                const pixelY = Math.floor((i / 4) / canvas.width);
+                const distance = Math.sqrt((pixelX - x) ** 2 + (pixelY - y) ** 2);
+
+                if (distance < radius) {
+                    const blurFactor = 1 - distance / radius;
+                    let r = 0, g = 0, b = 0;
+                    for (let j = 0; j < blurSamples; j++) {
+                        const offsetX = displacementFactor * directionX * (j / blurSamples) * blurFactor;
+                        const offsetY = displacementFactor * directionY * (j / blurSamples) * blurFactor;
+
+                        const sourceX = pixelX - offsetX;
+                        const sourceY = pixelY - offsetY;
+
+                        if (sourceX >= 0 && sourceX < canvas.width && sourceY >= 0 && sourceY < canvas.height) {
+                            const sourceIndex = (Math.floor(sourceY) * canvas.width + Math.floor(sourceX)) * 4;
+                            r += imageData.data[sourceIndex];
+                            g += imageData.data[sourceIndex + 1];
+                            b += imageData.data[sourceIndex + 2];
+                        }
+                    }
+
+                    pixels[i] = r / blurSamples;
+                    pixels[i + 1] = g / blurSamples;
+                    pixels[i + 2] = b / blurSamples;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            [lastX, lastY] = [x, y];
         }
 
-        const dx = (x - lastX) * smoothFactor;
-        const dy = (y - lastY) * smoothFactor;
-        const length = Math.sqrt(dx * dx + dy * dy);
-        const directionX = length > 0 ? dx / length : 0;
-        const directionY = length > 0 ? dy / length : 0;
-
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const pixels = imageData.data;
-
-        for (let i = 0; i < pixels.length; i += 4) {
-            const pixelX = (i / 4) % canvas.width;
-            const pixelY = Math.floor((i / 4) / canvas.width);
-            const distance = Math.sqrt((pixelX - x) ** 2 + (pixelY - y) ** 2);
-
-            if (distance < radius) {
-                const blurFactor = 1 - distance / radius; // Фактор размытия в зависимости от расстояния
-                let r = 0, g = 0, b = 0;
-                for (let j = 0; j < blurSamples; j++) {
-                    const offsetX = displacementFactor * directionX * (j / blurSamples) * blurFactor;
-                    const offsetY = displacementFactor * directionY * (j / blurSamples) * blurFactor;
-
-                    const sourceX = pixelX - offsetX;
-                    const sourceY = pixelY - offsetY;
-
-                    if (sourceX >= 0 && sourceX < canvas.width && sourceY >= 0 && sourceY < canvas.height) {
-                        const sourceIndex = (Math.floor(sourceY) * canvas.width + Math.floor(sourceX)) * 4;
-                        r += imageData.data[sourceIndex];
-                        g += imageData.data[sourceIndex + 1];
-                        b += imageData.data[sourceIndex + 2];
-                    }
-                }
-
-                pixels[i] = r / blurSamples;
-                pixels[i + 1] = g / blurSamples;
-                pixels[i + 2] = b / blurSamples;
+        function resetImage() {
+            if (originalImageData) {
+                ctx.putImageData(originalImageData, 0, 0);
             }
         }
 
-        ctx.putImageData(imageData, 0, 0);
-        [lastX, lastY] = [x, y];
-    }
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
 
-    function resetImage() {
-      if (originalImageData) {
-        ctx.putImageData(originalImageData, 0, 0);
-      }
-    }
-  </script>
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+    </script>
 </body>
-
 </html>
