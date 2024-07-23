@@ -137,7 +137,7 @@
     <canvas id="canvas" width="600" height="900"></canvas>
     <script>
         const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         let img = new Image();
         img.src = 'test.png'; // Замените на имя вашего изображения
 
@@ -156,6 +156,8 @@
         let touchX = 0;
         let touchY = 0;
         let originalImageData = null;
+        let lastUpdateTime = 0;
+        const updateInterval = 16; // Интервал обновления в миллисекундах (примерно 60 FPS)
 
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault(); // Предотвращаем стандартное поведение
@@ -170,7 +172,11 @@
             e.preventDefault(); // Предотвращаем стандартное поведение
             const touch = e.touches[0];
             [touchX, touchY] = [touch.clientX, touch.clientY];
-            requestAnimationFrame(() => displacePixels(touchX, touchY));
+            const currentTime = Date.now();
+            if (currentTime - lastUpdateTime >= updateInterval) {
+                requestAnimationFrame(() => displacePixels(touchX, touchY));
+                lastUpdateTime = currentTime;
+            }
         });
 
         canvas.addEventListener('touchend', () => {
@@ -184,7 +190,7 @@
         });
 
         function displacePixels(x, y) {
-            const radius = 100;
+            const radius = 50;
             const displacementFactor = 10;
             const blurSamples = 5;
             const smoothFactor = 0.5;
@@ -209,10 +215,11 @@
 
                 if (distance < radius) {
                     const blurFactor = 1 - distance / radius;
+                    const displacement = displacementFactor * blurFactor;
                     let r = 0, g = 0, b = 0;
                     for (let j = 0; j < blurSamples; j++) {
-                        const offsetX = displacementFactor * directionX * (j / blurSamples) * blurFactor;
-                        const offsetY = displacementFactor * directionY * (j / blurSamples) * blurFactor;
+                        const offsetX = displacement * directionX * (j / blurSamples);
+                        const offsetY = displacement * directionY * (j / blurSamples);
 
                         const sourceX = pixelX - offsetX;
                         const sourceY = pixelY - offsetY;
