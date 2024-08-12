@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body, html {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body style="margin:0;">
+    <div class="container">
+        <div style="position: relative; z-index: 1">
+            <canvas id="src" width="360" height="600"></canvas>
+            <canvas id="dst" width="128" height="128" style='position: absolute; z-index: 2'></canvas>
+        </div>
+    </div>
+    <script>
+        'use strict';
+var Mapper = function(width,height,filter) {
+    
+    var map = [];
+    
+    this.spherize = function(px,py) {
+        var x = px-width/2;
+        var y = py-height/2;
+        var r = Math.sqrt(x*x+y*y);
+        var maxr = width/2;
+        if (r>maxr) return {'x':px,'y':py}
+        var a = Math.atan2(y,x);
+        var k = (r/maxr)*(r/maxr)*0.5+0.5;
+        var dx = Math.cos(a)*r*k;
+        var dy = Math.sin(a)*r*k;
+        return {
+            'x': dx+width/2,
+            'y': dy+height/2
+        }
+    }
+    
+
+    this.exec = function(bitmap, texture) {
+        var height = bitmap.height;
+        var width = bitmap.width;
+        var colorat = function(x,y,channel) {
+            return texture.data[(x+y*height)*4+channel];
+        }
+        for (var j=0; j<height; j++) {
+            for (var i=0; i<width; i++) {
+                var u = map[(i+j*height)*2];
+                var v = map[(i+j*height)*2+1];
+                var x = Math.floor(u);
+                var y = Math.floor(v);
+                var kx = u-x;
+                var ky = v-y;
+                for (var c=0; c<4; c++) {
+                    bitmap.data[(i+j*height)*4+c] =
+                        (colorat(x,y  ,c)*(1-kx) + colorat(x+1,y  ,c)*kx) * (1-ky) +
+                        (colorat(x,y+1,c)*(1-kx) + colorat(x+1,y+1,c)*kx) * (ky);
+                }
+            }
+        }
+    };
+    
+    this.setTranslate = function(translator) {
+        if (typeof translator === 'string') translator = this[translator];
+        for (var y=0; y<height; y++) {
+            for (var x=0; x<width; x++) {
+                var t = translator(x,y);
+                map[(x+y*height)*2+0] = Math.max(Math.min(t.x,width-1),0);
+                map[(x+y*height)*2+1] = Math.max(Math.min(t.y,height-1),0);
+            }
+        }
+    }
+    
+    this.setTranslate(filter);
+}
+
+    var src = document.getElementById('src');
+    var dst = document.getElementById('dst');
+    var input = src.getContext('2d');
+    var output = dst.getContext('2d');
+    
+    // Загрузка изображения
+    var img = new Image();
+        img.src = 'test.png'; // Укажите путь к вашему изображению
+        img.onload = function() {
+            input.drawImage(img, 0, 0, src.width, src.height);
+        }
+    
+    // executing
+    var bitmap = output.getImageData(0,0,dst.width,dst.height);
+    var mapper = new Mapper(bitmap.width,bitmap.height,'spherize');
+    
+    var locked = false;
+    var originalWidth = dst.width;
+    var originalHeight = dst.height;
+    var reducedWidth = originalWidth / 2;
+    var reducedHeight = originalHeight / 2;
+
+    function handleMove(e) {
+        e.preventDefault(); // Предотвращает стандартное поведение браузера
+        if (locked) return;
+        locked = true;
+        var clientX, clientY;
+        if (e.touches) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        var texture = input.getImageData(clientX-Math.ceil(bitmap.width/2),clientY-Math.ceil(bitmap.height/2),bitmap.width,bitmap.height+1);
+        dst.style.left = clientX-Math.floor(dst.width/2)+'px';
+        dst.style.top = clientY-(Math.floor(dst.height/2))+'px';
+        mapper.exec(bitmap,texture);
+        output.putImageData(bitmap,0,0);
+        locked = false;
+    }
+    
+    function resetPosition() {
+        dst.style.left = '0px';
+        dst.style.top = '0px';
+        dst.width = reducedWidth;
+        dst.height = reducedHeight;
+    }
+
+    function restoreSize() {
+        dst.width = originalWidth;
+        dst.height = originalHeight;
+    }
+
+    src.addEventListener('mousemove', handleMove, false);
+    dst.addEventListener('mousemove', handleMove, false);
+    src.addEventListener('touchmove', handleMove, false);
+    dst.addEventListener('touchmove', handleMove, false);
+
+    src.addEventListener('touchend', resetPosition, false);
+    dst.addEventListener('touchend', resetPosition, false);
+    src.addEventListener('touchstart', restoreSize, false);
+    dst.addEventListener('touchstart', restoreSize, false);
+    
+    </script>
+</body>
+</html>
